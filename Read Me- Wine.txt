@@ -1,0 +1,108 @@
+RUSHDA QURESHI-2503951-MSBAWE2
+
+
+###-1. Data Loading and Initial Inspection
+
+import pandas as pd
+
+# Load both datasets (note the ';' delimiter)
+red_wine = pd.read_csv('winequality-red.csv', sep=';')
+white_wine = pd.read_csv('winequality-white.csv', sep=';')
+
+# Add a 'type' column to keep track of the wine variety
+red_wine['type'] = 'red'
+white_wine['type'] = 'white'
+
+# Combine into one dataframe
+df = pd.concat([red_wine, white_wine], ignore_index=True)
+
+# Save the combined dataset
+df.to_csv('combined_wine_quality.csv', index=False)
+print("Files combined successfully. Shape:", df.shape)
+
+##-2. Exploratory Data Analysis (EDA)
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# A. Descriptive Statistics
+print(df.describe())
+
+# B. Class Imbalance (Check distribution of 'quality')
+plt.figure(figsize=(8, 4))
+sns.countplot(x='quality', data=df)
+plt.title('Distribution of Wine Quality (Target Variable)')
+plt.savefig('bar_chart_quality.png')
+
+# C. Histograms (Distribution of a feature)
+plt.figure(figsize=(8, 4))
+sns.histplot(df['alcohol'], kde=True, bins=20)
+plt.title('Distribution of Alcohol Content')
+plt.savefig('histogram_alcohol.png')
+
+# D. Box Plots (Identify Outliers)
+plt.figure(figsize=(8, 4))
+sns.boxplot(x='type', y='residual sugar', data=df)
+plt.title('Residual Sugar by Wine Type (Detecting Outliers)')
+plt.savefig('boxplot_sugar.png')
+
+# E. Scatter Plot (Relationships between features)
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x='alcohol', y='density', hue='type', data=df, alpha=0.5)
+plt.title('Alcohol vs Density')
+plt.savefig('scatter_alcohol_density.png')
+
+# F. Correlation Heatmap
+plt.figure(figsize=(10, 8))
+# Use only numeric columns for correlation
+corr = df.select_dtypes(include=['number']).corr()
+sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f')
+plt.title('Correlation Heatmap')
+plt.savefig('heatmap_wine.png')
+
+###- 3. Feature Engineering, Scaling, and Splitting
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+# 1. Encoding 'type' (red=0, white=1)
+le = LabelEncoder()
+df['type'] = le.fit_transform(df['type'])
+
+# 2. Define Features (X) and Target (y)
+X = df.drop('quality', axis=1)
+y = df['quality']
+
+# 3. Stratified Train/Test Split
+# Ensuring 'quality' classes are distributed evenly
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+# 4. Scaling Features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+##-4. Baseline Modeling (Linear and Logistic Regression)
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_squared_error, classification_report
+
+# A. Baseline Linear Regression (Predicting quality as a continuous score)
+lin_model = LinearRegression()
+lin_model.fit(X_train_scaled, y_train)
+lin_preds = lin_model.predict(X_test_scaled)
+print(f"Linear Regression MSE: {mean_squared_error(y_test, lin_preds):.4f}")
+
+# B. Baseline Logistic Regression (Predicting quality as categories)
+# Max_iter is increased to ensure convergence
+log_model = LogisticRegression(max_iter=1000)
+log_model.fit(X_train_scaled, y_train)
+
+# C. Cross-Validation for Logistic Regression
+cv_scores = cross_val_score(log_model, X_train_scaled, y_train, cv=5)
+print(f"Logistic Regression CV Accuracy: {cv_scores.mean():.4f}")
+
+# D. Final Report
+log_preds = log_model.predict(X_test_scaled)
+print("\nLogistic Regression Classification Report:")
+print(classification_report(y_test, log_preds, zero_division=0))

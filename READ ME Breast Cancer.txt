@@ -1,0 +1,126 @@
+
+RUSHDA QURESHI-2503951-MSBAWE2
+
+import pandas as pd
+
+# Load dataset
+df = pd.read_csv('data.csv')
+
+# Drop unnecessary columns (ID and the empty column at the end)
+df = df.drop(columns=['id', 'Unnamed: 32'])
+
+# Descriptive Statistics
+print(df.describe())
+
+# Check for Class Imbalance (for Classification tasks)
+print(df['diagnosis'].value_counts())
+
+##EDA
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# A. Histogram: To see distribution of a feature
+plt.figure(figsize=(8, 4))
+sns.histplot(df['radius_mean'], kde=True)
+plt.title('Distribution of Radius Mean')
+plt.savefig('histogram.png')
+
+# B. Box Plot: To detect outliers and compare classes
+plt.figure(figsize=(8, 4))
+sns.boxplot(x='diagnosis', y='area_mean', data=df)
+plt.title('Area Mean by Diagnosis (Outlier Detection)')
+plt.savefig('boxplot.png')
+
+# C. Bar Chart: To visualize target class distribution
+df['diagnosis'].value_counts().plot(kind='bar', color=['skyblue', 'orange'])
+plt.title('Class Distribution (Malignant vs Benign)')
+plt.savefig('bar_chart.png')
+
+# D. Scatter Plot: To see relationships between two features
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x='radius_mean', y='texture_mean', hue='diagnosis', data=df)
+plt.title('Radius vs Texture')
+plt.savefig('scatter.png')
+
+# E. Correlation Heatmap: To find relationships between all features
+plt.figure(figsize=(12, 10))
+# Calculate correlation only for numeric columns
+corr = df.select_dtypes(include=['number']).corr()
+sns.heatmap(corr, cmap='coolwarm', annot=False) # annot=True if features are few
+plt.title('Feature Correlation Heatmap')
+plt.savefig('heatmap.png')
+
+##Preprocessing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+# A. Encoding Categorical Target (M=1, B=0)
+le = LabelEncoder()
+df['diagnosis'] = le.fit_transform(df['diagnosis'])
+
+# Define Features (X) and Target (y)
+X = df.drop('diagnosis', axis=1)
+y = df['diagnosis']
+
+# B. Stratified Train/Test Split
+# Ensures the train and test sets have the same proportion of classes
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+# C. Scaling Features
+# Important for models like Logistic Regression or SVM
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+##-REG
+import pandas as pd
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import classification_report, mean_squared_error
+
+
+
+# . Encoding and Feature Selection
+# Convert target 'diagnosis' (M/B) into 1s and 0s
+le = LabelEncoder()
+df['diagnosis'] = le.fit_transform(df['diagnosis']) 
+
+X = df.drop('diagnosis', axis=1)
+y = df['diagnosis']
+
+# 3. Stratified Train/Test Split & Scaling
+# Stratify ensures both sets have the same ratio of Malignant/Benign cases
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 4. Baseline Logistic Regression (For Classification)
+# Used to predict the category (Malignant vs Benign)
+log_model = LogisticRegression()
+log_model.fit(X_train_scaled, y_train)
+
+# Cross-Validation to ensure model stability
+cv_accuracy = cross_val_score(log_model, X_train_scaled, y_train, cv=5).mean()
+print(f"Logistic Regression CV Accuracy: {cv_accuracy:.4f}")
+
+# Final Classification Report
+log_preds = log_model.predict(X_test_scaled)
+print("\nClassification Report:")
+print(classification_report(y_test, log_preds))
+
+# 5. Baseline Linear Regression (As a Regressor)
+# Used to see how a standard regression model handles the binary target
+lin_model = LinearRegression()
+lin_model.fit(X_train_scaled, y_train)
+
+lin_preds = lin_model.predict(X_test_scaled)
+mse = mean_squared_error(y_test, lin_preds)
+print(f"\nLinear Regression Mean Squared Error: {mse:.4f}")

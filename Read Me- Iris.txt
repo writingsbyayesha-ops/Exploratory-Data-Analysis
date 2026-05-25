@@ -1,0 +1,50 @@
+RUSHDA QURESHI-2503951-MSBAWE2
+
+
+###-1. Data Loading and Initial Inspection
+
+import pandas as pd
+
+# Load the Excel file
+pip install openpyxl
+file_path = 'Iris_Dataset_Analysis.xlsx'
+df = pd.read_excel(file_path)
+
+# Display the first few rows
+print(df.head())
+
+# Check basic information about the dataset
+print(df.info())
+
+
+# 1. Encoding Class labels
+le = LabelEncoder()
+df['class_encoded'] = le.fit_transform(df['class'])
+
+X = df.drop(['class', 'class_encoded'], axis=1)
+y = df['class_encoded']
+
+# 2. Stratified Train/Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+# 3. Feature Scaling
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 4. Logistic Regression (Classification)
+log_model = LogisticRegression()
+log_model.fit(X_train_scaled, y_train)
+
+# Cross-Validation Accuracy
+cv_acc = cross_val_score(log_model, X_train_scaled, y_train, cv=5).mean()
+print(f"Logistic Regression CV Accuracy: {cv_acc:.4f}")
+print(classification_report(y_test, log_model.predict(X_test_scaled), target_names=le.classes_))
+
+# 5. Linear Regression (Baseline)
+lin_model = LinearRegression()
+lin_model.fit(X_train_scaled, y_train)
+lin_preds = lin_model.predict(X_test_scaled)
+print(f"Linear Regression Mean Squared Error: {mean_squared_error(y_test, lin_preds):.4f}")
