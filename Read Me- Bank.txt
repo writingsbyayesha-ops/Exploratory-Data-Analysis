@@ -1,4 +1,3 @@
-RUSHDA QURESHI-2503951-MSBAWE2
 
 import pandas as pd
 import numpy as np
