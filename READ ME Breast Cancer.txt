@@ -1,5 +1,4 @@
 
-RUSHDA QURESHI-2503951-MSBAWE2
 
 import pandas as pd
 
